@@ -1,0 +1,16 @@
+{
+    "name": "PlayableController.Sample",
+    "rootNamespace": "",
+    "references": [
+        "GUID:f5beddb500539dc40b29048d3c03c860"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
