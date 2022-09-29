@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -13,7 +14,9 @@ namespace PlayableControllers
         /// ブレンドするアバターマスク(なくてもいい)
         /// </summary>
         [SerializeField] private AvatarMask avatarMask;
-        
+
+        [SerializeField] private bool initializeOnAwake;
+
         // Playables Api
         private PlayableGraph graph;
         private AnimationPlayableOutput output;
@@ -26,12 +29,19 @@ namespace PlayableControllers
 
         private bool isFreeze;
 
+        private bool isInitialized;
+
         private void Awake()
         {
-            // AnimatorがGetComponentで見つからなかったらInChildrenで子供に問い合わせ
+            if(initializeOnAwake) Initialize();
+        }
+
+        public void Initialize()
+        {
             //todo: [sf] にしても良いかも？
-            animator = GetComponent<Animator>();
-            animator ??= GetComponentInChildren<Animator>();
+            animator = GetComponentInChildren<Animator>();
+
+            animator.runtimeAnimatorController = null;
             
             graph = PlayableGraph.Create();
 
@@ -46,13 +56,21 @@ namespace PlayableControllers
             output = AnimationPlayableOutput.Create(graph, "output", animator);
             
             graph.Play();
+            isInitialized = true;
         }
 
         public void Play(PlayAnimationInfo info)
         {
+            if(!isInitialized) return;
             if(isFreeze) return;
-            var mixer = mixers[info.layer];
+            if(info.AnimInfo.Clip == null) return;
             
+            var mixer = mixers[info.layer];
+
+            // 同じアニメーションがきたらキャンセルする
+            if(info.isSameAnimationCancel && mixer.currentPlayable.IsValid() && mixer.currentPlayable.GetAnimationClip() == info.AnimInfo.Clip)
+                return;
+
             // 切断
             graph.Disconnect(layerMixer, info.layer);
             
@@ -64,14 +82,14 @@ namespace PlayableControllers
             output.SetSourcePlayable(layerMixer);
         }
 
-        public void Play(AnimInfo animInfo, float duration = 0, int layer = 0, bool isOverride = true)
+        public void Play(AnimInfo animInfo, float duration = 0, bool isSameAnimationCancel = true, int layer = 0, bool isOverride = true)
         {
-            Play(new PlayAnimationInfo(animInfo,duration,layer,isOverride));
+            Play(new PlayAnimationInfo(animInfo,duration,isSameAnimationCancel,layer,isOverride));
         }
         
-        public void Play(AnimationClip clip, bool isLoop = false, float duration = 0, int layer = 0, bool isOverride = true)
+        public void Play(AnimationClip clip, bool isLoop = false, float duration = 0, bool isSameAnimationCancel = true, int layer = 0, bool isOverride = true)
         {
-            Play(new PlayAnimationInfo(clip,isLoop,duration,layer,isOverride));
+            Play(new PlayAnimationInfo(clip,isLoop,duration,isSameAnimationCancel,layer,isOverride));
         }
 
         /// <summary>
@@ -79,6 +97,7 @@ namespace PlayableControllers
         /// </summary>
         public void Pause(int layer = 0)
         {
+            if(!isInitialized) return;
             if(isFreeze) return;
             mixers[layer].Pause();
         }
@@ -88,6 +107,7 @@ namespace PlayableControllers
         /// </summary>
         public void Resume(int layer = 0)
         {
+            if(!isInitialized) return;
             if(isFreeze) return;
             mixers[layer].Resume();
         }
@@ -113,6 +133,7 @@ namespace PlayableControllers
         /// </summary>
         public string NowPlayClipName(int layer = 0)
         {
+            if(!isInitialized) return string.Empty;
             return mixers[layer].currentPlayable.GetAnimationClip().name;
         }
         
@@ -121,6 +142,7 @@ namespace PlayableControllers
         /// </summary>
         public bool IsFinished(int layer = 0)
         {
+            if(!isInitialized) return default;
             return mixers[layer].IsFinishedPlay;
         }
 
@@ -131,6 +153,7 @@ namespace PlayableControllers
         /// </summary>
         public void SetLayerEnabled(float duration, bool enable)
         {
+            if(!isInitialized) return;
             CrossFadeLayerWeightCoroutine = StartCoroutine(CrossFadeLayerWeightCore(1, duration, enable));
         }
 
@@ -160,6 +183,7 @@ namespace PlayableControllers
 
         private void Update()
         {
+            if(!isInitialized) return;
             if(isFreeze) return;
             // アニメーションの再生終了を監視する
             foreach(var mixer in mixers.Where(mixer => mixer.IsFinishedPlay))

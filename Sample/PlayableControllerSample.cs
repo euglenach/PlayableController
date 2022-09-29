@@ -52,7 +52,7 @@ namespace PlayableControllers.Samples
         [ContextMenu("Play!")]
         void Play()
         {
-            controller.Play(info[currentIndex],duration,0,isOverride);
+            controller.Play(info[currentIndex],duration,true,0,isOverride);
         }
     }
 }
