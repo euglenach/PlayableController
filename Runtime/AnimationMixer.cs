@@ -66,6 +66,9 @@ namespace PlayableControllers
         {
             animInfo = info.AnimInfo;
             
+            // 上書きされたときはキューを空にする
+            if(info.isOverride) animationQueue.Clear();
+            
             // 切断
             graph.Disconnect(mixer,0);
             graph.Disconnect(mixer,1);
