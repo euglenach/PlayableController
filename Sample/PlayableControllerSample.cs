@@ -7,10 +7,10 @@ namespace PlayableControllers.Samples
     {
         
         [SerializeField] private AnimInfo[] info;
-        [SerializeField] private float duration;
-        [SerializeField] private bool isOverride;
-        [SerializeField] private bool playOnAwake;
         [SerializeField] private int currentIndex;
+        [SerializeField] private float duration;
+        [SerializeField] private bool isOverride = true;
+        [SerializeField] private bool playOnAwake;
         
         private PlayableController controller;
 
@@ -30,7 +30,6 @@ namespace PlayableControllers.Samples
             {
                 currentIndex--;
                 if(currentIndex < 0) currentIndex = info.Length - 1;
-                
             }else if(Input.GetKeyDown(KeyCode.P))
             {
                 controller.Pause();
@@ -49,10 +48,29 @@ namespace PlayableControllers.Samples
             Play();
         }
 
+#if UNITY_EDITOR
         [ContextMenu("Play!")]
         void Play()
         {
-            controller.Play(info[currentIndex],duration,true,0,isOverride);
+            controller.Play(info[currentIndex],duration,false,0,isOverride);
         }
+        
+        [CustomEditor(typeof(PlayableControllerSample))]
+        public class PlayableControllerPlayerEditor : Editor
+        {
+            public override void OnInspectorGUI()
+            {
+                base.OnInspectorGUI();
+
+                var creator = target as PlayableControllerSample;
+                EditorGUILayout.Space();
+
+                if (GUILayout.Button("Play"))
+                {
+                    creator?.Play();
+                }
+            }
+        }
+#endif
     }
 }
