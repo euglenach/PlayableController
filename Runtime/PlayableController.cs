@@ -186,7 +186,7 @@ namespace PlayableControllers
             if(!isInitialized) return;
             if(isFreeze) return;
             // アニメーションの再生終了を監視する
-            foreach(var mixer in mixers.Where(mixer => mixer.IsFinishedPlay))
+            foreach(var mixer in mixers.Where(mixer => mixer.currentPlayable.IsValid() && mixer.IsFinishedPlay))
             {
                 mixer.FinishAnimation();
             }
