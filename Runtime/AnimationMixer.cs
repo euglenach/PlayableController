@@ -34,7 +34,7 @@ namespace PlayableControllers
             get
             {
                 if (!currentPlayable.IsValid())
-                    return false;
+                    return true;
 
                 // 予定されている再生時間を超えていれば、再生終了とみなす
                 return currentPlayable.GetTime() > currentPlayable.GetAnimationClip().length;
@@ -52,7 +52,7 @@ namespace PlayableControllers
         public void Reconnect(PlayAnimationInfo info)
         {
             if(isPause) return;
-            if(info.isOverride || IsFinishedPlay || transCoroutine is null)
+            if(info.isOverride || IsFinishedPlay)
             {
                 ReconnectCore(info);
             } else
