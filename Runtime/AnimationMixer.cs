@@ -151,28 +151,7 @@ namespace PlayableControllers
                 }
             }
         }
-
-        /// <summary>
-        /// 補足できるアニメーションイベントを再生する
-        /// TODO: 未完成。UniRXとかでイベント投げるか？
-        /// </summary>
-        public void TryAnimationEventFire()
-        {
-            var prevFirst = prevClipAnimationEvent.FirstOrDefault();
-            if(prevFirst != null && prevPlayable.IsValid() && prevPlayable.GetTime() >= prevFirst.time)
-            {
-                prevClipAnimationEvent.RemoveAt(0);
-                Debug.Log(prevFirst.functionName);
-            }
-            
-            var currentFirst = currentClipAnimationEvent.FirstOrDefault();
-            if(currentFirst != null && currentPlayable.IsValid() && currentPlayable.GetTime() >= currentFirst.time)
-            {
-                currentClipAnimationEvent.RemoveAt(0);
-                Debug.Log(currentFirst.functionName);
-            }
-        }
-
+        
         public void Pause()
         {
             if(isPause) return;
