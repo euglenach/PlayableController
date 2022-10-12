@@ -256,6 +256,7 @@ namespace PlayableControllers
             // アニメーションの再生終了を監視する
             foreach(var mixer in mixers)
             {
+                mixer.TryAnimationEventFire();
                 if(mixer.currentPlayable.IsValid() && mixer.IsFinishedPlay)
                     mixer.FinishAnimation();
             }
