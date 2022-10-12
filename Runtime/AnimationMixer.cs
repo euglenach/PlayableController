@@ -20,7 +20,7 @@ namespace PlayableControllers
         private PlayableGraph graph;
         private AnimInfo animInfo;
         
-        // Animation Event補足用
+        // Animation Event補足用 代入するときは並び替え済みにしとく
         private List<AnimationEvent> currentClipAnimationEvent = new();
         private List<AnimationEvent> prevClipAnimationEvent = new();
 
@@ -151,7 +151,27 @@ namespace PlayableControllers
                 }
             }
         }
-        
+
+        /// <summary>
+        /// 補足できるアニメーションイベントを再生する
+        /// TODO: 未完成。UniRXとかでイベント投げるか？
+        /// </summary>
+        public void TryAnimationEventFire()
+        {
+            static void Check(AnimationClipPlayable playable, IList<AnimationEvent> events)
+            {
+                var first = events.FirstOrDefault();
+                if(first != null && playable.IsValid() && playable.GetTime() >= first.time)
+                {
+                    // TODO: いべんとなげーる？
+                    events.RemoveAt(0);
+                }
+            }
+            
+            Check(prevPlayable,prevClipAnimationEvent);
+            Check(currentPlayable,currentClipAnimationEvent);
+        }
+
         public void Pause()
         {
             if(isPause) return;
