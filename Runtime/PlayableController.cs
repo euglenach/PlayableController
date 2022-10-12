@@ -138,6 +138,66 @@ namespace PlayableControllers
         }
         
         /// <summary>
+        /// 再生中のクリップを取得する
+        /// </summary>
+        public AnimationClip NowPlayClip(int layer = 0)
+        {
+            if(!isInitialized) return default;
+            return mixers[layer].currentPlayable.GetAnimationClip();
+        }
+
+        /// <summary>
+        /// 現在のアニメーションの0～1時間
+        /// </summary>
+        public float GetCurrentNormalizedTime(int layer = 0)
+        {
+            if(!isInitialized) return default;
+            if(mixers[layer].TryGetCurrentNormalizedTime(out var t))
+            {
+                return t;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// 指定したアニメーションクリップの0～1時間
+        /// </summary>
+        public bool TryGetNormalizedTime(AnimationClip clip, out float normalizedTime, int layer = 0)
+        {
+            normalizedTime = 0;
+            if(!isInitialized) return default;
+            var playable = GetPlayableWithClip(clip, layer);
+            if(!playable.IsValid()) return default;
+            
+            normalizedTime = (float)playable.GetTime() / playable.GetAnimationClip().length;
+            return true;
+        }
+
+        /// <summary>
+        /// 現在のアニメーションの再生時間
+        /// </summary>
+        public float GetCurrentTime(int layer = 0)
+        {
+            if(!isInitialized) return default;
+            return (float)mixers[layer].currentPlayable.GetTime();
+        }
+
+        /// <summary>
+        /// 指定したアニメーションクリップの再生時間
+        /// </summary>
+        public bool TryGetTime(AnimationClip clip, out float normalizedTime, int layer = 0)
+        {
+            normalizedTime = 0;
+            if(!isInitialized) return default;
+            var playable = GetPlayableWithClip(clip, layer);
+            if(!playable.IsValid()) return default;
+            
+            normalizedTime = (float)playable.GetTime();
+            return true;
+        }
+        
+        /// <summary>
         /// 再生が終了しているか
         /// </summary>
         public bool IsFinished(int layer = 0)
@@ -180,15 +240,25 @@ namespace PlayableControllers
 
             CrossFadeLayerWeightCoroutine = null;
         }
+        
+        private AnimationClipPlayable GetPlayableWithClip(AnimationClip clip, int layer = 0)
+        {
+            var mixer = mixers[layer];
+            var current = mixer.currentPlayable;
+            var prev = mixer.prevPlayable;
+            return current.GetAnimationClip() == clip? current : prev.GetAnimationClip() == clip? prev : default;
+        }
 
         private void Update()
         {
             if(!isInitialized) return;
             if(isFreeze) return;
             // アニメーションの再生終了を監視する
-            foreach(var mixer in mixers.Where(mixer => mixer.currentPlayable.IsValid() && mixer.IsFinishedPlay))
+            foreach(var mixer in mixers)
             {
-                mixer.FinishAnimation();
+                mixer.TryAnimationEventFire();
+                if(mixer.currentPlayable.IsValid() && mixer.IsFinishedPlay)
+                    mixer.FinishAnimation();
             }
         }
 

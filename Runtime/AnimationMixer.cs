@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
@@ -13,12 +14,16 @@ namespace PlayableControllers
     internal class AnimationMixer : IDisposable
     {
         // Playables Api
-        private AnimationClipPlayable prevPlayable;
+        public AnimationClipPlayable prevPlayable;
         public AnimationClipPlayable currentPlayable;
         public AnimationMixerPlayable mixer;
         private PlayableGraph graph;
         private AnimInfo animInfo;
         
+        // Animation Event補足用
+        private List<AnimationEvent> currentClipAnimationEvent = new();
+        private List<AnimationEvent> prevClipAnimationEvent = new();
+
         // コルーチン用
         private readonly PlayableController controller;
         private Coroutine transCoroutine;
@@ -65,6 +70,10 @@ namespace PlayableControllers
         private void ReconnectCore(PlayAnimationInfo info)
         {
             animInfo = info.AnimInfo;
+            foreach(var e in animInfo.Clip.events)
+            {
+                e.messageOptions = SendMessageOptions.DontRequireReceiver;
+            }
             
             // 上書きされたときはキューを空にする
             if(info.isOverride) animationQueue.Clear();
@@ -76,14 +85,20 @@ namespace PlayableControllers
             
             //更新
             prevPlayable = currentPlayable;
+            prevClipAnimationEvent = new List<AnimationEvent>(currentClipAnimationEvent);
             currentPlayable = AnimationClipPlayable.Create(graph, info.AnimInfo.Clip);
+            currentClipAnimationEvent = new List<AnimationEvent>(info.AnimInfo.Clip.events.OrderBy(e => e.time));
             
             //再接続
             mixer.ConnectInput(1, prevPlayable, 0);
             mixer.ConnectInput(0, currentPlayable, 0);
             
             // フェード中のコルーチンはキャンセルする
-            if(transCoroutine is not null) controller.StopCoroutine(transCoroutine);
+            if(transCoroutine is not null)
+            {
+                prevClipAnimationEvent.Clear();
+                controller.StopCoroutine(transCoroutine);
+            }
 
             transCoroutine = controller.StartCoroutine(CrossFadeAsync(info.duration));
         }
@@ -114,6 +129,8 @@ namespace PlayableControllers
                     return true;
                 }
             });
+            
+            prevClipAnimationEvent.Clear();
             transCoroutine = null;
         }
 
@@ -135,6 +152,27 @@ namespace PlayableControllers
             }
         }
 
+        /// <summary>
+        /// 補足できるアニメーションイベントを再生する
+        /// TODO: 未完成。UniRXとかでイベント投げるか？
+        /// </summary>
+        public void TryAnimationEventFire()
+        {
+            var prevFirst = prevClipAnimationEvent.FirstOrDefault();
+            if(prevFirst != null && prevPlayable.IsValid() && prevPlayable.GetTime() >= prevFirst.time)
+            {
+                prevClipAnimationEvent.RemoveAt(0);
+                Debug.Log(prevFirst.functionName);
+            }
+            
+            var currentFirst = currentClipAnimationEvent.FirstOrDefault();
+            if(currentFirst != null && currentPlayable.IsValid() && currentPlayable.GetTime() >= currentFirst.time)
+            {
+                currentClipAnimationEvent.RemoveAt(0);
+                Debug.Log(currentFirst.functionName);
+            }
+        }
+
         public void Pause()
         {
             if(isPause) return;
@@ -151,6 +189,18 @@ namespace PlayableControllers
             if(prevPlayable.IsValid()) prevPlayable.Play();
             if(currentPlayable.IsValid()) currentPlayable.Play();
             if(mixer.IsValid()) mixer.Play();
+        }
+        
+        /// <summary>
+        /// カレントの0~1時間を取得
+        /// </summary>
+        public bool TryGetCurrentNormalizedTime(out float normalizedTime)
+        {
+            normalizedTime = 0;
+            if (!currentPlayable.IsValid())
+                return false;
+            normalizedTime = (float)currentPlayable.GetTime() / currentPlayable.GetAnimationClip().length;
+            return true;
         }
 
         public void Dispose()
