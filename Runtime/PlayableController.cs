@@ -196,6 +196,15 @@ namespace PlayableControllers
             normalizedTime = (float)playable.GetTime();
             return true;
         }
+
+        /// <summary>
+        /// まだデバッグでしか使わない方が良い
+        /// </summary>
+        public void SetEvaluate(float normalizedTime, bool isStop = false ,int layer = 0)
+        {
+            var mixer = mixers[layer];
+            mixer.SetCurrentEvaluate(normalizedTime,isStop);
+        }
         
         /// <summary>
         /// 再生が終了しているか

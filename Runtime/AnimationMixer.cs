@@ -93,6 +93,8 @@ namespace PlayableControllers
             mixer.ConnectInput(1, prevPlayable, 0);
             mixer.ConnectInput(0, currentPlayable, 0);
             
+            currentPlayable.SetSpeed(1);
+            
             // フェード中のコルーチンはキャンセルする
             if(transCoroutine is not null)
             {
@@ -170,6 +172,19 @@ namespace PlayableControllers
             
             Check(prevPlayable,prevClipAnimationEvent);
             Check(currentPlayable,currentClipAnimationEvent);
+        }
+
+        /// <summary>
+        /// まだデバッグでしか使わない方が良い
+        /// </summary>
+        public void SetCurrentEvaluate(float normalizedTime, bool isStop = false)
+        {
+            if(!currentPlayable.IsValid()) return;
+            normalizedTime = Mathf.Clamp01(normalizedTime);
+            if(isStop) currentPlayable.SetSpeed(0);
+            var animTime = currentPlayable.GetAnimationClip().length;
+            currentPlayable.SetTime(animTime * normalizedTime);
+            graph.Evaluate(normalizedTime);
         }
 
         public void Pause()
