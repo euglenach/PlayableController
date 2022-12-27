@@ -124,17 +124,13 @@ namespace PlayableControllers
 
         IEnumerator CrossFadeAsync(float duration)
         {
-            var waitTime = Time.time + duration;
+            var time = 0f;
             
             yield return new WaitWhile(() =>
             {
-                if(isPause)
-                {
-                    waitTime += Time.deltaTime;
-                    return true;
-                }
-                var diff = waitTime - Time.time;
-                if (diff <= 0)
+                if(isPause) return true;
+                
+                if (duration <= time)
                 {
                     mixer.SetInputWeight(1, 0);
                     mixer.SetInputWeight(0, 1);
@@ -142,9 +138,10 @@ namespace PlayableControllers
                 }
                 else
                 {
-                    var rate = Mathf.Clamp01(diff / duration);
-                    mixer.SetInputWeight(1, rate);
-                    mixer.SetInputWeight(0, 1 - rate);
+                    var rate = Mathf.Clamp01(time / duration);
+                    mixer.SetInputWeight(1, 1 - rate);
+                    mixer.SetInputWeight(0, rate);
+                    time += Time.deltaTime * timeScale;
                     return true;
                 }
             });
