@@ -8,11 +8,13 @@ namespace PlayableControllers
     {
         public AnimationClip Clip;
         public bool IsLoop;
+        public float Speed;
 
-        public AnimInfo(AnimationClip clip, bool isLoop = false)
+        public AnimInfo(AnimationClip clip, bool isLoop = false, float speed = 1f)
         {
             Clip = clip;
             IsLoop = isLoop;
+            Speed = speed;
         }
     }
 
