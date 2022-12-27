@@ -133,7 +133,7 @@ namespace PlayableControllers
                     waitTime += Time.deltaTime;
                     return true;
                 }
-                var diff = (waitTime - Time.time) * timeScale;
+                var diff = waitTime - Time.time;
                 if (diff <= 0)
                 {
                     mixer.SetInputWeight(1, 0);
