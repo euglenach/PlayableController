@@ -23,6 +23,10 @@ namespace PlayableControllers
         // Animation Event補足用 代入するときは並び替え済みにしとく
         private List<AnimationEvent> currentClipAnimationEvent = new();
         private List<AnimationEvent> prevClipAnimationEvent = new();
+        
+        // AnimInfoを両方保存しておく
+        private AnimInfo prevAnimInfo;
+        private AnimInfo currentAnimInfo;
 
         // コルーチン用
         private readonly PlayableController controller;
@@ -30,6 +34,15 @@ namespace PlayableControllers
         
         private readonly Queue<PlayAnimationInfo> animationQueue = new();
         private bool isPause;
+        
+        private float timeScale = 1f;
+
+        public float TimeScale
+        {
+            get => timeScale;
+            set => SetTimeScale(value);
+        }
+
 
         /// <summary>
         /// モーション再生が終了しているか
@@ -89,11 +102,15 @@ namespace PlayableControllers
             currentPlayable = AnimationClipPlayable.Create(graph, info.AnimInfo.Clip);
             currentClipAnimationEvent = new List<AnimationEvent>(info.AnimInfo.Clip.events.OrderBy(e => e.time));
             
+            // infoの切り替え
+            prevAnimInfo = currentAnimInfo;
+            currentAnimInfo = info.AnimInfo;
+            
             //再接続
             mixer.ConnectInput(1, prevPlayable, 0);
             mixer.ConnectInput(0, currentPlayable, 0);
             
-            currentPlayable.SetSpeed(1);
+            currentPlayable.SetSpeed(info.AnimInfo.Speed * timeScale);
             
             // フェード中のコルーチンはキャンセルする
             if(transCoroutine is not null)
@@ -116,7 +133,7 @@ namespace PlayableControllers
                     waitTime += Time.deltaTime;
                     return true;
                 }
-                var diff = waitTime - Time.time;
+                var diff = (waitTime - Time.time) * timeScale;
                 if (diff <= 0)
                 {
                     mixer.SetInputWeight(1, 0);
@@ -174,19 +191,6 @@ namespace PlayableControllers
             Check(currentPlayable,currentClipAnimationEvent);
         }
 
-        /// <summary>
-        /// まだデバッグでしか使わない方が良い
-        /// </summary>
-        public void SetCurrentEvaluate(float normalizedTime, bool isStop = false)
-        {
-            if(!currentPlayable.IsValid()) return;
-            normalizedTime = Mathf.Clamp01(normalizedTime);
-            if(isStop) currentPlayable.SetSpeed(0);
-            var animTime = currentPlayable.GetAnimationClip().length;
-            currentPlayable.SetTime(animTime * normalizedTime);
-            graph.Evaluate(normalizedTime);
-        }
-
         public void Pause()
         {
             if(isPause) return;
@@ -215,6 +219,13 @@ namespace PlayableControllers
                 return false;
             normalizedTime = (float)currentPlayable.GetTime() / currentPlayable.GetAnimationClip().length;
             return true;
+        }
+        
+        private void SetTimeScale(float value)
+        {
+            timeScale = value;
+            if(prevPlayable.IsValid()) prevPlayable.SetSpeed(prevAnimInfo.Speed * timeScale);
+            if(currentPlayable.IsValid()) currentPlayable.SetSpeed(currentAnimInfo.Speed * timeScale);
         }
 
         public void Dispose()

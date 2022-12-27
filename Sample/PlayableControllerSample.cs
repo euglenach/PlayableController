@@ -12,9 +12,10 @@ namespace PlayableControllers.Samples
         [SerializeField] private float duration;
         [SerializeField] private bool isOverride = true;
         [SerializeField] private bool playOnAwake;
-        [SerializeField, Range(0,1)] private float normalTimeOffset;
-
+        [SerializeField, Range(0, 2)]  private float speed = 1;
+        
         private PlayableController controller;
+        private float prevSpeed = 1;
 
         private void Start()
         {
@@ -24,6 +25,12 @@ namespace PlayableControllers.Samples
 
         private void Update()
         {
+            if(prevSpeed != speed)
+            {
+                controller.SetTimeScale(speed);
+                prevSpeed = speed;
+            }
+            
             if(Input.GetKeyDown(KeyCode.DownArrow))
             {
                 currentIndex++;
@@ -54,18 +61,10 @@ namespace PlayableControllers.Samples
         void Play()
         {
             controller.Play(info[currentIndex],duration,false,0,isOverride);
-            controller.SetEvaluate(normalTimeOffset);
         }
         
 #if UNITY_EDITOR
-        [SerializeField, Range(0, 1)] private float evaluate;
-
-        private void OnValidate()
-        {
-            if(controller is null) return;
-            controller.SetEvaluate(evaluate,true);
-        }
-        
+       
         [CustomEditor(typeof(PlayableControllerSample))]
         public class PlayableControllerPlayerEditor : Editor
         {

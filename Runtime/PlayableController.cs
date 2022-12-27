@@ -196,15 +196,14 @@ namespace PlayableControllers
             normalizedTime = (float)playable.GetTime();
             return true;
         }
-
-        /// <summary>
-        /// まだデバッグでしか使わない方が良い
-        /// </summary>
-        public void SetEvaluate(float normalizedTime, bool isStop = false ,int layer = 0)
+        
+        public void SetTimeScale(float timeScale, int layer = 0)
         {
-            var mixer = mixers[layer];
-            mixer.SetCurrentEvaluate(normalizedTime,isStop);
+            if (!isInitialized) return;
+            mixers[layer].TimeScale = timeScale;
         }
+        
+        
         
         /// <summary>
         /// 再生が終了しているか
@@ -262,10 +261,13 @@ namespace PlayableControllers
         {
             if(!isInitialized) return;
             if(isFreeze) return;
-            // アニメーションの再生終了を監視する
+            
             foreach(var mixer in mixers)
             {
+                
                 mixer.TryAnimationEventFire();
+                
+                // アニメーションの再生終了を監視する
                 if(mixer.currentPlayable.IsValid() && mixer.IsFinishedPlay)
                     mixer.FinishAnimation();
             }
@@ -273,7 +275,7 @@ namespace PlayableControllers
 
         private void OnDestroy()
         {
-            graph.Destroy();
+            if(graph.IsValid()) graph.Destroy();
             if(layerMixer.IsValid())layerMixer.Destroy();
             foreach(var mixer in mixers)
             {
