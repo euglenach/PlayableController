@@ -52,6 +52,7 @@ namespace PlayableControllers
             layerMixer = AnimationLayerMixerPlayable.Create(graph,2);
             if (avatarMask != null)
                 layerMixer.SetLayerMaskFromAvatarMask(1, avatarMask);
+            SetLayerWeightCore(0, 1);
             
             output = AnimationPlayableOutput.Create(graph, "output", animator);
             
@@ -71,12 +72,16 @@ namespace PlayableControllers
             if(info.isSameAnimationCancel && mixer.currentPlayable.IsValid() && mixer.currentPlayable.GetAnimationClip() == info.AnimInfo.Clip)
                 return;
 
+            // レイヤーのWeightを持っておく
+            var layerWeight = layerMixer.GetInputWeight(info.layer);
+            
             // 切断
             graph.Disconnect(layerMixer, info.layer);
             
             // 再接続
             mixer.Reconnect(info);
-            layerMixer.ConnectInput(info.layer,mixer.mixer,0,1);
+            layerMixer.ConnectInput(info.layer, mixer.mixer, 0, layerWeight);
+            SetLayerWeightCore(info.layer, layerWeight);
             
             // 出力
             output.SetSourcePlayable(layerMixer);
@@ -202,9 +207,7 @@ namespace PlayableControllers
             if (!isInitialized) return;
             mixers[layer].TimeScale = timeScale;
         }
-        
-        
-        
+
         /// <summary>
         /// 再生が終了しているか
         /// </summary>
@@ -216,37 +219,63 @@ namespace PlayableControllers
 
         private Coroutine CrossFadeLayerWeightCoroutine;
         
-        /// <summary>
-        /// レイヤーの上書き設定
-        /// </summary>
-        public void SetLayerEnabled(float duration, bool enable)
+        public float GetLayerWeight(int layer)
         {
-            if(!isInitialized) return;
-            CrossFadeLayerWeightCoroutine = StartCoroutine(CrossFadeLayerWeightCore(1, duration, enable));
+            return layerMixer.GetInputWeight(layer);
         }
 
-        private IEnumerator CrossFadeLayerWeightCore(int layer, float duration, bool enable)
+        /// <summary>
+        /// レイヤーの重み設定
+        /// </summary>
+        public void SetLayerWeight(int layer, float weight)
+        {
+            if(!isInitialized) return;
+            SetLayerWeightCore(layer, weight);
+        }
+        
+        /// <summary>
+        /// レイヤーの重み設定
+        /// </summary>
+        public void SetLayerWeight(int layer, float weight, float duration)
+        {
+            if(!isInitialized) return;
+            CrossFadeLayerWeightCoroutine = StartCoroutine(CrossFadeLayerWeightCore(layer, weight, duration));
+        }
+
+        private IEnumerator CrossFadeLayerWeightCore(int layer, float weight, float duration)
         {
             if(isFreeze) yield break;
-
-            if (enable && layerMixer.GetInputWeight(layer) >= 1f) yield break;
-            if (!enable && layerMixer.GetInputWeight(layer) <= 0f) yield break;
             
             if(CrossFadeLayerWeightCoroutine is not null) StopCoroutine(CrossFadeLayerWeightCoroutine);
+
+            var time = 0f;
             
-            // 指定時間でアニメーションをブレンド
-            var waitTime = Time.time + duration;
+            // 指定時間でレイヤーをブレンド
             yield return new WaitWhile(() =>
             {
-                var diff = waitTime - Time.time;
-                var rate = Mathf.Clamp01(diff / duration);
-                var weight = enable ? 1 - rate : rate;
-                layerMixer.SetInputWeight(layer, weight);
-
-                return diff > 0;
+                if(isFreeze) return true;
+                if (duration <= time)
+                {
+                    SetLayerWeightCore(layer, weight);
+                    return false;
+                }
+                else
+                {
+                    var rate = Mathf.Clamp01(time / duration);
+                    SetLayerWeightCore(layer, rate * weight);
+                    time += Time.deltaTime;
+                    return true;
+                }
             });
 
             CrossFadeLayerWeightCoroutine = null;
+        }
+
+        void SetLayerWeightCore(int layer, float weight)
+        {
+            var other = layer == 0 ? 1 : 0;
+            layerMixer.SetInputWeight(layer, weight);
+            layerMixer.SetInputWeight(other, 1 - weight);
         }
         
         private AnimationClipPlayable GetPlayableWithClip(AnimationClip clip, int layer = 0)

@@ -12,10 +12,13 @@ namespace PlayableControllers.Samples
         [SerializeField] private float duration;
         [SerializeField] private bool isOverride = true;
         [SerializeField] private bool playOnAwake;
+        [SerializeField] private int layer;
+        [SerializeField, Range(0, 1)] private float layerWeight = 1;
         [SerializeField, Range(0, 2)]  private float speed = 1;
         
         private PlayableController controller;
         private float prevSpeed = 1;
+        private float prevLayerWeight = 1;
 
         private void Start()
         {
@@ -27,8 +30,14 @@ namespace PlayableControllers.Samples
         {
             if(prevSpeed != speed)
             {
-                controller.SetTimeScale(speed);
+                controller.SetTimeScale(speed, layer);
                 prevSpeed = speed;
+            }
+
+            if(prevLayerWeight != layerWeight)
+            {
+                controller.SetLayerWeight(layer ,layerWeight);
+                prevLayerWeight = layerWeight;
             }
             
             if(Input.GetKeyDown(KeyCode.DownArrow))
@@ -60,8 +69,15 @@ namespace PlayableControllers.Samples
         [ContextMenu("Play!")]
         void Play()
         {
-            controller.Play(info[currentIndex],duration,false,0,isOverride);
+            controller.Play(info[currentIndex],duration,false,layer,isOverride);
+            prevLayerWeight = controller.GetLayerWeight(layer);
+            layerWeight = prevLayerWeight;
         }
+
+        // void SetLayer()
+        // {
+        //     controller.SetLayerWeight(layer, layerWeight);
+        // }
         
 #if UNITY_EDITOR
        
@@ -79,6 +95,11 @@ namespace PlayableControllers.Samples
                 {
                     creator?.Play();
                 }
+                
+                // if (GUILayout.Button("SetLayer"))
+                // {
+                //     creator?.SetLayer();
+                // }
             }
         }
 #endif
