@@ -164,6 +164,7 @@ namespace PlayableControllers
                 {
                     currentPlayable.SetTime(0f);
                     graph.Evaluate(0);
+                    currentClipAnimationEvent = new List<AnimationEvent>(currentPlayable.GetAnimationClip().events.OrderBy(e => e.time));
                 }
             }
         }
