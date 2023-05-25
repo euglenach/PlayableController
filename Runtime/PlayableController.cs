@@ -16,6 +16,22 @@ namespace PlayableControllers
         [SerializeField] private AvatarMask avatarMask;
 
         [SerializeField] private bool initializeOnAwake;
+        
+        /// <summary>
+        /// 更新方法
+        /// </summary>
+        [SerializeField] private DirectorUpdateMode updateMode = DirectorUpdateMode.GameTime;
+        
+        public DirectorUpdateMode UpdateMode
+        {
+            get => updateMode;
+            set
+            {
+                updateMode = value;
+                if(graph.IsValid())
+                    graph.SetTimeUpdateMode(value);
+            }
+        }
 
         // Playables Api
         private PlayableGraph graph;
@@ -44,6 +60,7 @@ namespace PlayableControllers
             animator.runtimeAnimatorController = null;
             
             graph = PlayableGraph.Create();
+            graph.SetTimeUpdateMode(updateMode);
 
             mixers = new AnimationMixer[2];
             mixers[0] = new AnimationMixer(graph,this);
