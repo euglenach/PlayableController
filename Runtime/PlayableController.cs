@@ -50,11 +50,18 @@ namespace PlayableControllers
             mixers[1] = new AnimationMixer(graph,this);
             
             layerMixer = AnimationLayerMixerPlayable.Create(graph,2);
-            if (avatarMask != null)
-                layerMixer.SetLayerMaskFromAvatarMask(1, avatarMask);
-            SetLayerWeightCore(0, 1);
             
-            output = AnimationPlayableOutput.Create(graph, "output", animator);
+            // アバターマスクがあったらどっちもWeightを1にしとく
+            if(avatarMask != null)
+            {
+                crossFadeLayerWeightCoroutines = new Coroutine[2];
+                layerMixer.SetLayerMaskFromAvatarMask(1, avatarMask);
+                layerMixer.SetInputWeight(1, 1);
+            } else
+            {
+                crossFadeLayerWeightCoroutines = new Coroutine[1]; // マスクがないときはコルーチン一個でいい
+            }
+            layerMixer.SetInputWeight(0, 1);
             
             graph.Play();
             isInitialized = true;
@@ -224,12 +231,20 @@ namespace PlayableControllers
             return layerMixer.GetInputWeight(layer);
         }
 
+        private Coroutine[] crossFadeLayerWeightCoroutines;
+        
         /// <summary>
         /// レイヤーの重み設定
         /// </summary>
         public void SetLayerWeight(int layer, float weight)
         {
             if(!isInitialized) return;
+            var i = avatarMask? layer : 0;
+            if(crossFadeLayerWeightCoroutines[i] is not null)
+            {
+                StopCoroutine(crossFadeLayerWeightCoroutines[i]);
+                crossFadeLayerWeightCoroutines[i] = null;
+            }
             SetLayerWeightCore(layer, weight);
         }
         
@@ -239,17 +254,21 @@ namespace PlayableControllers
         public void SetLayerWeight(int layer, float weight, float duration)
         {
             if(!isInitialized) return;
-            CrossFadeLayerWeightCoroutine = StartCoroutine(CrossFadeLayerWeightCore(layer, weight, duration));
+            var i = avatarMask? layer : 0;
+            crossFadeLayerWeightCoroutines[i] = StartCoroutine(CrossFadeLayerWeightCore(layer, weight, duration));
         }
 
         private IEnumerator CrossFadeLayerWeightCore(int layer, float weight, float duration)
         {
             if(isFreeze) yield break;
             
-            if(CrossFadeLayerWeightCoroutine is not null) StopCoroutine(CrossFadeLayerWeightCoroutine);
+            var i = avatarMask? layer : 0;
+            if(crossFadeLayerWeightCoroutines[i] is not null) StopCoroutine(crossFadeLayerWeightCoroutines[i]);
 
             var time = 0f;
+            var prevWeight = layerMixer.GetInputWeight(layer);
             
+
             // 指定時間でレイヤーをブレンド
             yield return new WaitWhile(() =>
             {
@@ -262,17 +281,23 @@ namespace PlayableControllers
                 else
                 {
                     var rate = Mathf.Clamp01(time / duration);
-                    SetLayerWeightCore(layer, rate * weight);
+                    SetLayerWeightCore(layer, Mathf.Lerp(prevWeight, weight, rate));
                     time += Time.deltaTime;
                     return true;
                 }
             });
 
-            CrossFadeLayerWeightCoroutine = null;
+            crossFadeLayerWeightCoroutines[i] = null;
         }
 
         void SetLayerWeightCore(int layer, float weight)
         {
+            // アバターマスクがあるときは両方1になることがあるので完全にマニュアル
+            if(avatarMask != null)
+            {
+                layerMixer.SetInputWeight(layer, weight);
+                return;
+            }
             var other = layer == 0 ? 1 : 0;
             layerMixer.SetInputWeight(layer, weight);
             layerMixer.SetInputWeight(other, 1 - weight);
