@@ -35,6 +35,11 @@ namespace PlayableControllers
         private readonly Queue<PlayAnimationInfo> animationQueue = new();
         private bool isPause;
         
+        /// <summary>
+        /// アニメーションが無くなったときにAnimationClipPlayableをお掃除する
+        /// </summary>
+        private bool autoDestroy;
+        
         private float timeScale = 1f;
 
         public float TimeScale
@@ -70,6 +75,7 @@ namespace PlayableControllers
         public void Reconnect(PlayAnimationInfo info)
         {
             if(isPause) return;
+            autoDestroy = info.AutoDestroy;
             if(info.isOverride || IsFinishedPlay)
             {
                 ReconnectCore(info);
@@ -165,6 +171,16 @@ namespace PlayableControllers
                     currentPlayable.SetTime(0f);
                     graph.Evaluate(0);
                     currentClipAnimationEvent = new List<AnimationEvent>(currentPlayable.GetAnimationClip().events.OrderBy(e => e.time));
+                } else
+                {
+                    // アニメーションに続きが無い場合は接続を切って終わる
+                    if(autoDestroy)
+                    {
+                        graph.Disconnect(mixer, 0);
+                        graph.Disconnect(mixer, 1);
+                        if(prevPlayable.IsValid()) prevPlayable.Destroy();
+                        if(prevPlayable.IsValid()) currentPlayable.Destroy();
+                    }
                 }
             }
         }

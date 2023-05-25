@@ -31,23 +31,30 @@ namespace PlayableControllers
         /// 現在再生中のクリップと同じクリップがきたら何もしない
         /// </summary>
         public readonly bool isSameAnimationCancel;
+        
+        /// <summary>
+        /// アニメーションが終わったら自動で消す
+        /// </summary>
+        public readonly bool AutoDestroy;
 
-        public PlayAnimationInfo(AnimInfo animInfo, float duration = 0, bool isSameAnimationCancel = true, int layer = 0, bool isOverride = true)
+        public PlayAnimationInfo(AnimInfo animInfo, float duration = 0, bool isSameAnimationCancel = true, int layer = 0, bool isOverride = true, bool autoDestroy = false)
         {
             this.AnimInfo = animInfo;
             this.duration = duration;
             this.isSameAnimationCancel = isSameAnimationCancel;
             this.layer = layer;
             this.isOverride = isOverride;
+            this.AutoDestroy = autoDestroy;
         }
         
-        public PlayAnimationInfo(AnimationClip clip, bool isLoop = false, float duration = 0, bool isSameAnimationCancel = true, int layer = 0, bool isOverride = true)
+        public PlayAnimationInfo(AnimationClip clip, bool isLoop = false, float duration = 0, bool isSameAnimationCancel = true, int layer = 0, bool isOverride = true, bool autoDestroy = false, float speed = 1f)
         {
-            this.AnimInfo = new AnimInfo(clip,isLoop);
+            this.AnimInfo = new AnimInfo(clip ,isLoop ,speed);
             this.duration = duration;
             this.isSameAnimationCancel = isSameAnimationCancel;
             this.layer = layer;
             this.isOverride = isOverride;
+            this.AutoDestroy = autoDestroy;
         }
     }
 }

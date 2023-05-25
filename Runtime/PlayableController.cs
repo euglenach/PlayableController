@@ -94,14 +94,15 @@ namespace PlayableControllers
             output.SetSourcePlayable(layerMixer);
         }
 
-        public void Play(AnimInfo animInfo, float duration = 0, bool isSameAnimationCancel = true, int layer = 0, bool isOverride = true)
+        public void Play(AnimInfo animInfo, float duration = 0, bool isSameAnimationCancel = true, int layer = 0, bool isOverride = true, bool autoDestroy = false)
         {
-            Play(new PlayAnimationInfo(animInfo,duration,isSameAnimationCancel,layer,isOverride));
+            var clipName = animInfo.Clip ? animInfo.Clip.name : "";
+            Play(new PlayAnimationInfo(animInfo, duration, isSameAnimationCancel, layer, isOverride, autoDestroy));
         }
-        
-        public void Play(AnimationClip clip, bool isLoop = false, float duration = 0, bool isSameAnimationCancel = true, int layer = 0, bool isOverride = true)
+
+        public void Play(AnimationClip clip, bool isLoop = false, float duration = 0, bool isSameAnimationCancel = true, int layer = 0, bool isOverride = true, float speed = 1f, bool autoDestroy = false)
         {
-            Play(new PlayAnimationInfo(clip,isLoop,duration,isSameAnimationCancel,layer,isOverride));
+            Play(new PlayAnimationInfo(clip, isLoop, duration, isSameAnimationCancel, layer, isOverride, autoDestroy, speed));
         }
 
         /// <summary>
