@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
@@ -79,6 +80,8 @@ namespace PlayableControllers
                 crossFadeLayerWeightCoroutines = new Coroutine[1]; // マスクがないときはコルーチン一個でいい
             }
             layerMixer.SetInputWeight(0, 1);
+            
+            output = AnimationPlayableOutput.Create(graph, "output", this.animator);
             
             graph.Play();
             isInitialized = true;
@@ -354,5 +357,45 @@ namespace PlayableControllers
                 mixer.Dispose();
             }
         }
+        
+#if UNITY_EDITOR
+        [CustomEditor(typeof(PlayableController))]
+        private class _: Editor
+        {
+            // てきと～～
+            public override void OnInspectorGUI()
+            {
+                base.OnInspectorGUI();
+                var component = target as PlayableController;
+                if(!component.graph.IsValid()) return;
+
+                using var s = new EditorGUI.DisabledGroupScope(true);
+                
+                GUILayout.Space(5);
+                GUILayout.Label("==Info==");
+                GUILayout.Space(5);
+
+                foreach(var (mixer,i) in component.mixers.Select((m,i) => (m,i)))
+                {
+                    GUILayout.Label($"Layer{i.ToString()}");
+                    if(mixer.mixer.IsValid())
+                    {
+                        var clip = "None";
+                        if(mixer.currentPlayable.IsValid()) clip = mixer.currentPlayable.GetAnimationClip()?.name ?? "None";
+                        GUILayout.Label($"CurrentClip: {clip}"); clip = "None";
+                        if(mixer.prevPlayable.IsValid()) clip = mixer.prevPlayable.GetAnimationClip()?.name ?? "None";
+                        GUILayout.Label($"PreviousClip: {clip}");
+                        
+                        GUILayout.Label($"Wight: {component.layerMixer.GetInputWeight(i)}");
+                    } else
+                    {
+                        GUILayout.Label("Invalid");
+                    }
+                    
+                    GUILayout.Label("");
+                }
+            }
+        }
+#endif
     }
 }
