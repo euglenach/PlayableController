@@ -16,7 +16,7 @@ namespace PlayableControllers
         /// </summary>
         [SerializeField] private AvatarMask avatarMask;
 
-        [SerializeField] private bool initializeOnAwake;
+        [SerializeField] private bool initializeOnAwake = true;
         
         /// <summary>
         /// 更新方法
