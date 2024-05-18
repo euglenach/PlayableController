@@ -352,6 +352,7 @@ namespace PlayableControllers
         {
             if(graph.IsValid()) graph.Destroy();
             if(layerMixer.IsValid())layerMixer.Destroy();
+            if(mixers is null) return;
             foreach(var mixer in mixers)
             {
                 mixer.Dispose();
