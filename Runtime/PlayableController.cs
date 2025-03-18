@@ -235,6 +235,13 @@ namespace PlayableControllers
             if (!isInitialized) return;
             mixers[layer].TimeScale = timeScale;
         }
+        
+        public void SetEvaluate(float normalizedTime, bool isStop = false, int layer = 0)
+        {
+            if (!isInitialized) return;
+            var mixer = mixers[layer];
+            mixer.SetCurrentEvaluate(normalizedTime, isStop);
+        }
 
         /// <summary>
         /// 再生が終了しているか
