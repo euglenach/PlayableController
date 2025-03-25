@@ -47,6 +47,7 @@ namespace PlayableControllers
         private bool isFreeze;
 
         private bool isInitialized;
+        public bool IsInitialized => isInitialized;
 
         private void Awake()
         {
@@ -55,8 +56,9 @@ namespace PlayableControllers
 
         public void Initialize()
         {
+            if(isInitialized) return;
             //todo: [sf] にしても良いかも？
-            animator = GetComponentInChildren<Animator>();
+            animator = GetComponentInChildren<Animator>(true);
 
             animator.runtimeAnimatorController = null;
             
